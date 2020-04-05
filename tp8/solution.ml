@@ -32,15 +32,25 @@ let rec string_of_path : path -> string = function
   | t :: [] -> string_of_dir t; (*end*)
   | h::t -> string_of_dir h ^ " ; " ^ string_of_path t;;
 
-(*test*)
+(* simplify (à refaire)*)
+let rec simplify : path -> path = function
+  | [] -> [] 
+  | x :: [] -> x :: []
+  | TurnLeft :: TurnRight :: rest -> rest
+  | TurnRight :: TurnLeft :: rest -> rest
+  | (StepBackward _) :: (StepForward _) :: rest -> rest
+  | (StepForward _) :: (StepBackward _) :: rest -> rest
+  | x :: y :: rest -> x :: simplify (y :: rest) ;;
 
-(*let dir = sample_path;;
- string_of_path dir;;*)
+(*test simplfy*)
+simplify [TurnRight; TurnLeft; TurnRight; TurnRight];;
+simplify ([TurnRight; TurnRight; TurnRight]);;
+simplify [(StepBackward(1)); (StepForward(1))];;
+simplify [(StepBackward(1)); (StepForward(1)); (StepBackward(1)); TurnRight; TurnRight];;
 
-(*Question 2*)
 
-type orientation = North | South | East | West;;
-type hunter = Hunter of (int * int * orientation);;
+type orientation = East | West | North | South;;
+type hunter = (int * int * orientation);;
 
 
 let string_of_orientation = function
@@ -50,8 +60,9 @@ let string_of_orientation = function
   | West -> "ouest";;
 
 let string_of_hunter : hunter -> string = function
-  | Hunter (x,y,o) -> "(" ^ string_of_int x ^ "," ^ string_of_int y ^ "," ^ string_of_orientation o ^")";;
+  | (x,y,o) -> "(" ^ string_of_int x ^ "," ^ string_of_int y ^ "," ^ string_of_orientation o ^")";;
 
+(* test string_of_hunter *)
 (*let h = Hunter (5,2,South);;
 string_of_hunter h;;*)
 
@@ -71,39 +82,51 @@ let orientation_move d o =
        | West -> North)
   | (_,o) -> o
 ;;
-  
-(*param_move TurnRight North;;*)
+ 
+(*test orientation_move*)
+(*orientation_move TurnRight North;;*)
+
 let move h dir = 
   match (h,dir) with
-  | (Hunter (x,y,o), TurnLeft) -> Hunter  (x,y, orientation_move TurnLeft o)
-  | (Hunter (x,y,o), TurnRight) -> Hunter  (x,y, orientation_move TurnRight o)
-  | (Hunter (x,y,o), (StepForward dist)) -> 
+  | ((x,y,o), TurnLeft) ->  (x,y, orientation_move TurnLeft o)
+  | ((x,y,o), TurnRight) -> (x,y, orientation_move TurnRight o)
+  | ((x,y,o), (StepForward dist)) -> 
       (match o with
-       | North -> Hunter (x,y+dist,o)
-       | East -> Hunter (x+dist,y,o)
-       | West -> Hunter (x-dist,y,o)
-       | South -> Hunter (x,y-dist,o))
+       | North -> (x,y+dist,o)
+       | East -> (x+dist,y,o)
+       | West -> (x-dist,y,o)
+       | South -> (x,y-dist,o))
       
-  | (Hunter (x,y,o), (StepBackward dist)) -> 
+  | ((x,y,o), (StepBackward dist)) -> 
       (match o with
-       | North -> Hunter (x,y-dist,o)
-       | East -> Hunter (x-dist,y,o)
-       | West -> Hunter (x+dist,y,o)
-       | South -> Hunter (x,y+dist,o))
+       | North -> (x,y-dist,o)
+       | East -> (x-dist,y,o)
+       | West -> (x+dist,y,o)
+       | South -> (x,y+dist,o))
 ;; 
-
-(*test string_of_hunter*)  
-(*let h = Hunter (5,2,South);;
- (string_of_hunter h;;*)
 
 (* test move *)
 (*move (Hunter (0,0,North)) (StepBackward 5);;*)
 
 let rec finally h p =
   match (h, p) with
-  | (Hunter(h),[]) -> Hunter(h)
-  | (Hunter(h),t::[]) -> move (Hunter(h)) t
-  | (Hunter(h), head::tail) -> finally (move (Hunter(h)) head) tail
+  | (h,[]) -> h
+  | (h,t::[]) -> move (h) t
+  | (h, head::tail) -> finally (move (h) head) tail
 ;; 
 
-finally (Hunter (0,0,North)) sample_path;;
+(* test finally *)
+(*finally ((0,0,North)) sample_path;;*)
+
+(* à refaire *)
+type obstacles = (int * int) list;;
+let rec move_with_obstacles o h dir =
+  let (x,y,_) = h in 
+  if (List.mem (x,y) o) then h
+  else
+    move (h) dir
+;;
+
+move_with_obstacles [(1,0); (3,3); (2,3); (3,2); (3,3); (0,3); (3,0); (1,3); (2,0); (0,2); (3,0); (2,1); (0,2); (3,0); (2,2); (0,0); (1,1); (0,1); (1,1); (1,0); (1,3)] (1,0,North) (StepForward(3)) ;;
+move_with_obstacles [(4,1); (4,2); (3,3); (0,1); (1,1); (2,0); (2,1); (4,2)] (3,4,North) (StepBackward(4));;
+move_with_obstacles [(0,4); (3,1); (1,4)] (1,4,West) (StepBackward(1))
