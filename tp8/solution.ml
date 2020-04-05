@@ -34,8 +34,8 @@ let rec string_of_path : path -> string = function
 
 (*test*)
 
-let dir = sample_path;;
-string_of_path dir;;
+(*let dir = sample_path;;
+ string_of_path dir;;*)
 
 (*Question 2*)
 
@@ -52,10 +52,10 @@ let string_of_orientation = function
 let string_of_hunter : hunter -> string = function
   | Hunter (x,y,o) -> "(" ^ string_of_int x ^ "," ^ string_of_int y ^ "," ^ string_of_orientation o ^")";;
 
-let h = Hunter (5,2,South);;
-string_of_hunter h;;
+(*let h = Hunter (5,2,South);;
+string_of_hunter h;;*)
 
-let param_move d o =
+let orientation_move d o =
   match (d,o) with
   | (TurnLeft,o) -> 
       (match o with
@@ -75,18 +75,35 @@ let param_move d o =
 (*param_move TurnRight North;;*)
 let move h dir = 
   match (h,dir) with
-  | (Hunter (x,y,o), TurnLeft) -> Hunter  (x,y, param_move TurnLeft o)
-  | (Hunter (x,y,o), TurnRight) -> Hunter  (x,y, param_move TurnRight o)
-  | (Hunter (x,y,o), (StepBackward dist|StepForward dist)) -> 
+  | (Hunter (x,y,o), TurnLeft) -> Hunter  (x,y, orientation_move TurnLeft o)
+  | (Hunter (x,y,o), TurnRight) -> Hunter  (x,y, orientation_move TurnRight o)
+  | (Hunter (x,y,o), (StepForward dist)) -> 
       (match o with
        | North -> Hunter (x,y+dist,o)
+       | East -> Hunter (x+dist,y,o)
+       | West -> Hunter (x-dist,y,o)
+       | South -> Hunter (x,y-dist,o))
+      
+  | (Hunter (x,y,o), (StepBackward dist)) -> 
+      (match o with
+       | North -> Hunter (x,y-dist,o)
        | East -> Hunter (x-dist,y,o)
-       | South -> Hunter (x+dist,y,o)
-       | West -> Hunter (x,y-dist,o))
+       | West -> Hunter (x+dist,y,o)
+       | South -> Hunter (x,y+dist,o))
 ;; 
-  
-let h = Hunter (5,2,South);;
-string_of_hunter h;;
+
+(*test string_of_hunter*)  
+(*let h = Hunter (5,2,South);;
+ (string_of_hunter h;;*)
 
 (* test move *)
-move (Hunter (0,0,South), TurnLeft);;
+(*move (Hunter (0,0,North)) (StepBackward 5);;*)
+
+let rec finally h p =
+  match (h, p) with
+  | (Hunter(h),[]) -> Hunter(h)
+  | (Hunter(h),t::[]) -> move (Hunter(h)) t
+  | (Hunter(h), head::tail) -> finally (move (Hunter(h)) head) tail
+;; 
+
+finally (Hunter (0,0,North)) sample_path;;
